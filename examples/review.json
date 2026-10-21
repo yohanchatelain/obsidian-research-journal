@@ -1,0 +1,10 @@
+{
+  "title": "Research design review",
+  "source": "README.md",
+  "criteria": "Find unsupported claims, missing failure handling, and unclear validation. Cite exact passages and suggest checks.",
+  "context": "Assess this as a local research notebook tool. Separate implementation evidence from plans.",
+  "participants": [
+    {"slot": "correctness", "client": "codex", "mode": "manual"},
+    {"slot": "skeptic", "client": "claude", "mode": "manual"}
+  ]
+}

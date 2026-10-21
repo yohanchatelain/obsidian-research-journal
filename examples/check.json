@@ -1,0 +1,8 @@
+{
+  "argv": ["python3", "-m", "pytest", "-q"],
+  "cwd": ".",
+  "timeout": 300,
+  "executor": "local",
+  "env": {"PYTHONDONTWRITEBYTECODE": "1"},
+  "artifacts": []
+}

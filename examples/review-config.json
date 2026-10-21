@@ -1,0 +1,15 @@
+{
+  "reviewers": {
+    "codex-fresh": {"client": "codex", "mode": "automatic", "timeout": 600},
+    "claude-fresh": {"client": "claude", "mode": "automatic", "timeout": 600},
+    "agy-manual": {"client": "antigravity", "mode": "manual"}
+  },
+  "participants": [
+    {"slot": "correctness", "profile": "codex-fresh"},
+    {"slot": "skeptic", "profile": "claude-fresh"}
+  ],
+  "executors": {
+    "lab": {"kind": "ssh", "host": "my-lab", "root": "~/research-journal-runs", "python": "python3"},
+    "cluster": {"kind": "slurm", "host": "my-cluster", "root": "~/research-journal-runs", "python": "python3", "resources": {"time": "00:10:00", "mem": "2G", "cpus-per-task": 1}}
+  }
+}

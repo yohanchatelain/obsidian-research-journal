@@ -1,0 +1,15 @@
+{
+  "vault": "~/Documents/Obsidian Vault",
+  "state": "~/.local/state/research-journal",
+  "timezone": "America/Toronto",
+  "folder": "Research Journal",
+  "todo": "TODO list.md",
+  "projects": {
+    "baseline": {
+      "name": "Baseline research",
+      "workspaces": ["~/Work/baseline-research"],
+      "notes": ["Baseline research/Overview.md"]
+    }
+  },
+  "exclude": ["Trash", "Templates"]
+}
