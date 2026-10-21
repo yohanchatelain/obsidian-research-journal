@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "rclone": "/usr/bin/rclone",
+  "timeout": 240,
+  "hosts": [
+    {
+      "name": "my-cluster",
+      "path": "/home/user/Documents/Obsidian Vault",
+      "backup": "/home/user/.local/state/research-journal/sync-backups",
+      "python": "/usr/bin/python3",
+      "source": "/home/user/.local/share/obsidian-research-journal"
+    }
+  ]
+}

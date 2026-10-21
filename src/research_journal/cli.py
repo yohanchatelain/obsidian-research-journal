@@ -77,6 +77,12 @@ def parser():
     hook.add_argument("--event", required=True)
     mcp = commands.add_parser("mcp", help="Start the local MCP stdio server")
     mcp.add_argument("--client", choices=["codex", "claude", "antigravity", "manual"], default="manual")
+    sync = commands.add_parser("sync", help="Synchronize Markdown notes over configured SSH connections")
+    sync.add_argument("--settings", type=Path)
+    sync.add_argument("--host", action="append")
+    sync.add_argument("--initialize", action="store_true")
+    sync.add_argument("--dry-run", action="store_true")
+    sync.add_argument("--status", action="store_true")
     from .reviews.cli import add_parser
     add_parser(commands)
     return root
@@ -166,6 +172,10 @@ def main(argv=None):
             config = Config.load(args.config)
             journal = Journal(config)
             match args.command:
+                case "sync":
+                    from .sync import run
+                    result = run(config, args.settings or args.config.parent / "sync.json", hosts=args.host,
+                                 initialize=args.initialize, dry_run=args.dry_run, status=args.status)
                 case "review":
                     from .reviews.cli import run
                     result = run(config, args)
@@ -221,7 +231,7 @@ def main(argv=None):
                 case "context":
                     result = journal.get_context(args.workspace, args.project)
         print(json.dumps(result, indent=None if args.command == "hook" else 2, ensure_ascii=False))
-        return 0
+        return 1 if args.command == "sync" and not result.get("ok") else 0
     except (OSError, ValueError, TypeError, KeyError, sqlite3.Error, Conflict) as error:
         if args.command == "hook":
             print("{}")

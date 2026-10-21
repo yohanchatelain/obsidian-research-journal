@@ -32,6 +32,7 @@ python3 bin/research-journal setup --vault /path/to/remote/Obsidian-vault --appl
 Installing this tool does not copy or synchronize the vault. An independent empty
 remote vault will be an independent notebook. Use separate state directories on each
 machine; do not synchronize live SQLite databases or worker staging directories.
+For workstation-driven Markdown mirroring, see [SSH synchronization](sync.md).
 Concurrent note synchronization must be handled by the chosen filesystem/sync tool.
 
 Setup preserves unrelated assistant settings and keeps private backups. A conflicting

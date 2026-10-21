@@ -120,7 +120,8 @@ Configuration lives at `~/.config/research-journal/config.json`; see
 to use a different configuration. All clients must use the same configuration and state directory.
 
 For installations on rorqual or slashbin, see [remote installation](docs/remote-install.md).
-Each host keeps its own state; sharing notebook contents requires a shared or synchronized vault.
+Each host keeps its own state. Optional [SSH note synchronization](docs/sync.md)
+keeps Markdown vault mirrors current using rclone bisync from your workstation.
 
 Unmapped sessions go to the inbox. Assign them with:
 
