@@ -9,6 +9,8 @@ def test_each_client_requests_one_checkpoint(journal, client):
                "workspacePaths": ["/work"], "executionNum": 1}
     started = handle(journal, client, "SessionStart", payload)
     assert "session_id=s" in str(started)
+    if client == "claude":  # Claude turns always start with a prompt.
+        handle(journal, client, "UserPromptSubmit", {**payload, "prompt": "Hello"})
     first = handle(journal, client, "Stop", payload)
     assert first["decision"] == ("continue" if client == "antigravity" else "block")
     second = handle(journal, client, "Stop", payload)
@@ -66,3 +68,23 @@ def test_antigravity_new_turn_after_idle(journal):
 
 def test_malformed_unknown_payload_never_blocks(journal):
     assert handle(journal, "codex", "Stop", {}) == {}
+
+
+def test_background_notifications_do_not_start_turns(journal):
+    payload = {"session_id": "s"}
+    handle(journal, "claude", "SessionStart", payload)
+    handle(journal, "claude", "UserPromptSubmit", {**payload, "prompt": "Run jobs", "turn_id": "a"})
+    for job in ("one", "two"):
+        notice = {**payload, "prompt": f"<task-notification>\n<task-id>{job}</task-id>", "turn_id": job}
+        assert "turn=1" in str(handle(journal, "claude", "UserPromptSubmit", notice))
+    assert journal.status()["capture_gaps"] == []
+    journal.checkpoint("claude", "s", 1, nothing_to_record=True)
+    assert handle(journal, "claude", "Stop", payload) == {}
+
+
+def test_claude_session_without_prompt_is_not_a_gap(journal):
+    payload = {"session_id": "s"}
+    handle(journal, "claude", "SessionStart", payload)
+    handle(journal, "claude", "SessionEnd", payload)
+    status = journal.status()
+    assert status["incomplete_sessions"] == [] and status["capture_gaps"] == []
