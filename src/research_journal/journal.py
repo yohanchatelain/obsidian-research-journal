@@ -40,6 +40,11 @@ def metadata(**values) -> str:
                               for key, value in values.items()) + "---\n\n"
 
 
+def _within(recorded: str, workspace: str) -> bool:
+    """A session belongs to a workspace when it ran there or below it (e.g. a git worktree)."""
+    return bool(recorded) and Path(recorded).is_relative_to(Path(workspace))
+
+
 class Journal:
     def __init__(self, config: Config):
         self.config = config
@@ -438,7 +443,7 @@ class Journal:
             recent = []
             for payload in self._progress():
                 if (payload.get("project") == project if project
-                        else bool(workspace) and payload.get("workspace") == workspace):
+                        else bool(workspace) and _within(payload.get("workspace", ""), workspace)):
                     path = self.config.path(payload["path"])
                     if str(path) not in [r["absolute_path"] for r in recent]:
                         recent.append({"absolute_path": str(path), "path": self._relative(path),

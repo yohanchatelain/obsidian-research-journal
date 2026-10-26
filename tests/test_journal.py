@@ -231,3 +231,26 @@ def test_project_links_and_existing_date_are_reused(journal):
     assert "Baseline research" in task["text"]
     assert "Project work" in journal._project_path("baseline").read_text()
     assert journal.config.path(journal.config.todo).read_text().count(f"## {journal.now():%Y-%m-%d}") == 1
+
+
+def test_new_date_goes_below_frontmatter():
+    from research_journal.tasks import add_under_date
+    content = "---\ntags: [todo]\n---\n## 2026-10-21\n- [ ] a\n"
+    updated = add_under_date(content, "2026-10-26", "new", "rj-x")
+    assert updated.startswith("---\ntags: [todo]\n---\n## 2026-10-26\n- [ ] new ^rj-x\n")
+    assert updated.endswith("## 2026-10-21\n- [ ] a\n")
+
+
+def test_tags_are_not_headings():
+    tasks = parse_tasks("## Week\n#urgent\n- [ ] a\n####\n- [ ] b\n", "f.md")
+    assert [t.heading for t in tasks] == ["Week", ""]
+
+
+def test_context_includes_worktree_sessions(journal, tmp_path):
+    work = tmp_path / "general"
+    journal.record_progress("In a worktree", {"findings": "x"}, client="claude", session_id="w",
+                            workspace=str(work / ".claude/worktrees/fix"))
+    journal.record_progress("Elsewhere", {"findings": "y"}, client="claude", session_id="o",
+                            workspace=str(tmp_path / "general-other"))
+    paths = [r["content"] for r in journal.get_context(str(work))["recent_sessions"]]
+    assert len(paths) == 1 and "In a worktree" in paths[0]

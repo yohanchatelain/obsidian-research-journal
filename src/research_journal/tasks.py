@@ -8,6 +8,7 @@ from .storage import digest
 CHECKBOX = re.compile(r"^(?P<indent>[ \t]*)(?:[-*+] |\d+[.)] )\[(?P<state>[ xX])\] (?P<text>.*)$")
 BLOCK = re.compile(r" \^(?P<id>[A-Za-z0-9-]+)\s*$")
 FENCE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
+HEADING = re.compile(r"^#{1,6}(?:[ \t]|$)")  # "#tag" at the start of a line is not a heading.
 
 
 @dataclass
@@ -46,7 +47,7 @@ def parse_tasks(content: str, path: str) -> list[Task]:
             continue
         if fence:
             continue
-        if line.startswith("#"):
+        if HEADING.match(line):
             heading = line.lstrip("# ")
         match = CHECKBOX.match(line)
         if not match:
@@ -77,4 +78,13 @@ def add_under_date(content: str, day: str, text: str, block_id: str) -> str:
                 lines[index] += newline
             lines.insert(index + 1, task)
             return "".join(lines)
-    return f"{heading}{newline}{task}{newline}{content}"
+    # A new date goes first, but after any YAML frontmatter, which must stay on line 1.
+    start = 0
+    if lines and lines[0].rstrip("\r\n") == "---":
+        for index, line in enumerate(lines[1:], 1):
+            if line.rstrip("\r\n") in {"---", "..."}:
+                start = index + 1
+                break
+    if start and not lines[start - 1].endswith(("\n", "\r")):
+        lines[start - 1] += newline
+    return "".join(lines[:start]) + f"{heading}{newline}{task}{newline}" + "".join(lines[start:])
