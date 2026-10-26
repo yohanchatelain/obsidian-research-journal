@@ -92,9 +92,9 @@ def handle(journal: Journal, client: str, event: str, payload: dict) -> dict:
             if remind:
                 db.execute("UPDATE sessions SET reminded=?,state='awaiting-checkpoint',updated=? WHERE client=? AND id=?",
                            (turn, now, client, session))
-                message = ("Research Journal checkpoint missing. Save this turn with record_progress, "
-                           "including evidence and next steps; or acknowledge nothing_to_record with checkpoint. "
-                           + context_message(client, session, turn, workspace))
+                message = ("Research Journal checkpoint missing. Save this turn with record_progress "
+                           "or checkpoint(nothing_to_record=true). "
+                           f"client={client}, session_id={session}, turn={turn}, workspace={workspace}.")
                 output = {"decision": "continue" if client == "antigravity" else "block", "reason": message}
             else:
                 if missing:
