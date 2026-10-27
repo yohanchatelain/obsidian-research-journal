@@ -62,6 +62,10 @@ TOOLS = {
 
 TOOLS.update(REVIEW_TOOLS)
 
+# Expose only known non-mutating operations to ChatGPT unless the operator opts in.
+# Future MCP tools must be reviewed before joining this allowlist.
+READ_ONLY_TOOLS = frozenset({"get_context", "search_tasks", "status", "review_get_packet", "review_status"})
+
 
 def validate(value, spec, field="arguments"):
     types = spec.get("type")
@@ -91,9 +95,11 @@ def validate(value, spec, field="arguments"):
 
 
 class Server:
-    def __init__(self, journal: Journal, client="manual"):
+    def __init__(self, journal: Journal, client="manual", *, allow_writes=False):
         self.journal = journal
         self.client = client
+        self.allowed_tools = (READ_ONLY_TOOLS if client == "chatgpt" and not allow_writes
+                              else frozenset(TOOLS))
         self.initialized = False
         self.ready = False
 
@@ -125,13 +131,14 @@ class Server:
                 return self._error(identifier, -32000, "Initialize the MCP connection first")
             elif method == "tools/list":
                 result = {"tools": [{"name": name, "description": description, "inputSchema": spec,
-                          "annotations": {"readOnlyHint": name in {"get_context", "search_tasks", "status", "review_get_packet", "review_status"},
+                          "annotations": {"readOnlyHint": name in READ_ONLY_TOOLS,
                                           "destructiveHint": False, "openWorldHint": False}}
-                         for name, (description, spec) in TOOLS.items()]}
+                         for name, (description, spec) in TOOLS.items()
+                         if name in self.allowed_tools]}
             elif method == "tools/call":
                 name = params.get("name")
-                if name not in TOOLS:
-                    return self._error(identifier, -32602, "Unknown tool")
+                if name not in self.allowed_tools:
+                    return self._error(identifier, -32602, "Unknown or disabled tool")
                 arguments = params.get("arguments", {})
                 try:
                     validate(arguments, TOOLS[name][1])
