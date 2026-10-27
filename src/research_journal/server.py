@@ -31,6 +31,8 @@ TASK = schema({"path": STRING, "line": INTEGER, "text": STRING, "done": BOOL,
                "heading": STRING, "indent": INTEGER, "open_children": BOOL},
               ("path", "text", "fingerprint", "line"))
 TOOLS = {
+    "list_projects": ("List configured research projects and their existing note paths.",
+                      schema({})),
     "get_context": ("Read recent research progress, existing project notes, and open tasks before working.",
                     schema({"workspace": STRING, "project": STRING})),
     "search_tasks": ("Find exact checkbox references; pass a returned object unchanged to update_task.",
@@ -64,7 +66,7 @@ TOOLS.update(REVIEW_TOOLS)
 
 # Expose only known non-mutating operations to ChatGPT unless the operator opts in.
 # Future MCP tools must be reviewed before joining this allowlist.
-READ_ONLY_TOOLS = frozenset({"get_context", "search_tasks", "status", "review_get_packet", "review_status"})
+READ_ONLY_TOOLS = frozenset({"list_projects", "get_context", "search_tasks", "status", "review_get_packet", "review_status"})
 
 
 def validate(value, spec, field="arguments"):
