@@ -93,7 +93,9 @@ python3 /absolute/path/obsidian-research-journal/bin/research-journal \
 
 Then update/restart the tunnel profile and re-check ChatGPT's tool permissions.
 With write access enabled, ChatGPT can call `record_progress`,
-`capture_idea`, `add_task`, and the other journal/review MCP operations.
+`capture_idea`, `add_task`, `update_task`, `link_task`, `assign_session`,
+and `refresh`. **Review execution, review participant mutations, and hook-only
+checkpointing remain unavailable** even with the write flag.
 These affect your **real Obsidian vault**. Ask for a summary and approve
 significant edits rather than assuming automatic capture. Existing task
 completion rules still require evidence and a reason.
