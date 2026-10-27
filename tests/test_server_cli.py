@@ -144,3 +144,11 @@ def test_chatgpt_cli_flags_and_no_implicit_write_permission():
     assert args.allow_writes is False
     args = parser().parse_args(["mcp", "--client", "chatgpt", "--allow-writes"])
     assert args.allow_writes is True
+
+
+def test_chatgpt_can_discover_project_selectors(journal):
+    server = Server(journal, "chatgpt")
+    connect(server)
+    response = request(server, "tools/call", {"name": "list_projects", "arguments": {}})
+    assert response["result"]["isError"] is False
+    assert json.loads(response["result"]["content"][0]["text"]) == journal.list_projects()
