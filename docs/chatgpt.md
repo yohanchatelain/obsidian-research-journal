@@ -27,7 +27,8 @@ put `--config /absolute/path/to/config.json` **before** `mcp`.
 
 Unlike a coding assistant, browser ChatGPT has no Research Journal lifecycle
 hooks, no local current-working-directory, and no automatic turn capture.
-Ask it explicitly to retrieve context (preferably `get_context(project="...")`),
+Ask it explicitly to call `list_projects`, retrieve context
+(`get_context(project="...")` with a returned project key),
 record an idea, or save a progress checkpoint when permitted.
 
 ## 2. Create a private tunnel
@@ -70,7 +71,8 @@ and tunnel permissions before debugging the bridge.
 
 In the default ChatGPT mode the server advertises only:
 
-- `get_context`
+- `list_projects` (discover configured projects)
+- `get_context` (use a project key from `list_projects`)
 - `search_tasks`
 - `status`
 - `review_get_packet` and `review_status` (require the review's participant credentials)
