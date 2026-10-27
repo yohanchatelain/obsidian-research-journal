@@ -133,6 +133,8 @@ def test_chatgpt_explicit_opt_in_enables_writes(journal):
     connect(server)
     listed = {tool["name"] for tool in request(server, "tools/list")["result"]["tools"]}
     assert "add_task" in listed
+    assert "review_run_check" not in listed
+    assert "checkpoint" not in listed
     response = request(server, "tools/call", {
         "name": "add_task", "arguments": {"text": "Approved ChatGPT test task"}})
     assert response["result"]["isError"] is False
