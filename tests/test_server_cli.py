@@ -6,8 +6,8 @@ import sys
 
 import pytest
 
-from research_journal.cli import main
-from research_journal.server import Server
+from research_journal.cli import main, parser
+from research_journal.server import Server, READ_ONLY_TOOLS
 
 RUNNER = Path(__file__).resolve().parents[1] / "bin/research-journal"
 
@@ -113,3 +113,44 @@ def test_unavailable_hook_is_nonblocking(tmp_path, monkeypatch, capsys):
     captured = capsys.readouterr()
     assert json.loads(captured.out) == {}
     assert "unavailable" in captured.err
+
+
+def test_chatgpt_default_read_only_tools_and_enforced_denial(journal):
+    server = Server(journal, "chatgpt")
+    connect(server)
+    listed = {tool["name"] for tool in request(server, "tools/list")["result"]["tools"]}
+    assert listed == READ_ONLY_TOOLS
+    response = request(server, "tools/call", {
+        "name": "add_task", "arguments": {"text": "Should not appear in the vault"}})
+    assert response["error"]["code"] == -32602
+    assert journal.search_tasks("Should not appear in the vault") == []
+    response = request(server, "tools/call", {"name": "status", "arguments": {}})
+    assert response["result"]["isError"] is False
+
+
+def test_chatgpt_explicit_opt_in_enables_writes(journal):
+    server = Server(journal, "chatgpt", allow_writes=True)
+    connect(server)
+    listed = {tool["name"] for tool in request(server, "tools/list")["result"]["tools"]}
+    assert "add_task" in listed
+    assert "review_run_check" not in listed
+    assert "checkpoint" not in listed
+    response = request(server, "tools/call", {
+        "name": "add_task", "arguments": {"text": "Approved ChatGPT test task"}})
+    assert response["result"]["isError"] is False
+    assert journal.search_tasks("Approved ChatGPT test task")
+
+
+def test_chatgpt_cli_flags_and_no_implicit_write_permission():
+    args = parser().parse_args(["mcp", "--client", "chatgpt"])
+    assert args.allow_writes is False
+    args = parser().parse_args(["mcp", "--client", "chatgpt", "--allow-writes"])
+    assert args.allow_writes is True
+
+
+def test_chatgpt_can_discover_project_selectors(journal):
+    server = Server(journal, "chatgpt")
+    connect(server)
+    response = request(server, "tools/call", {"name": "list_projects", "arguments": {}})
+    assert response["result"]["isError"] is False
+    assert json.loads(response["result"]["content"][0]["text"]) == journal.list_projects()
