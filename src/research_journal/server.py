@@ -67,6 +67,12 @@ TOOLS.update(REVIEW_TOOLS)
 # Expose only known non-mutating operations to ChatGPT unless the operator opts in.
 # Future MCP tools must be reviewed before joining this allowlist.
 READ_ONLY_TOOLS = frozenset({"list_projects", "get_context", "search_tasks", "status", "review_get_packet", "review_status"})
+CHATGPT_WRITE_TOOLS = READ_ONLY_TOOLS | frozenset({
+    "record_progress", "capture_idea", "add_task", "update_task",
+    "link_task", "assign_session", "refresh",
+})
+# Never expose review execution, participant mutations, or hook-only checkpointing
+# over a browser-originated connection, even when writes are explicitly enabled.
 
 
 def validate(value, spec, field="arguments"):
@@ -100,8 +106,8 @@ class Server:
     def __init__(self, journal: Journal, client="manual", *, allow_writes=False):
         self.journal = journal
         self.client = client
-        self.allowed_tools = (READ_ONLY_TOOLS if client == "chatgpt" and not allow_writes
-                              else frozenset(TOOLS))
+        self.allowed_tools = ((CHATGPT_WRITE_TOOLS if allow_writes else READ_ONLY_TOOLS)
+                              if client == "chatgpt" else frozenset(TOOLS))
         self.initialized = False
         self.ready = False
 
