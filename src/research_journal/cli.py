@@ -76,7 +76,9 @@ def parser():
     hook.add_argument("--client", choices=["codex", "claude", "antigravity"], required=True)
     hook.add_argument("--event", required=True)
     mcp = commands.add_parser("mcp", help="Start the local MCP stdio server")
-    mcp.add_argument("--client", choices=["codex", "claude", "antigravity", "manual"], default="manual")
+    mcp.add_argument("--client", choices=["codex", "claude", "antigravity", "chatgpt", "manual"], default="manual")
+    mcp.add_argument("--allow-writes", action="store_true",
+                     help="Explicitly enable write tools for the ChatGPT MCP client (default: read-only)")
     sync = commands.add_parser("sync", help="Synchronize Markdown notes over configured SSH connections")
     sync.add_argument("--settings", type=Path)
     sync.add_argument("--host", action="append")
@@ -181,7 +183,9 @@ def main(argv=None):
                     result = run(config, args)
                 case "mcp":
                     from .server import Server
-                    Server(journal, args.client).run()
+                    if args.allow_writes and args.client != "chatgpt":
+                        raise ValueError("--allow-writes is supported only with --client chatgpt")
+                    Server(journal, args.client, allow_writes=args.allow_writes).run()
                     return 0
                 case "hook":
                     from .hooks import handle

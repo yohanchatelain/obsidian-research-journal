@@ -436,6 +436,11 @@ class Journal:
             self._refresh(db)
         return {"path": f"{self.config.folder}/Home.md"}
 
+    def list_projects(self):
+        """Expose registered project selectors without leaking local workspace paths."""
+        return [{"key": key, "name": value["name"], "notes": value.get("notes", [])}
+                for key, value in sorted(self.config.projects.items())]
+
     def get_context(self, workspace="", project=None):
         project = project or self.config.project_for(workspace)
         self._validate_project(project)

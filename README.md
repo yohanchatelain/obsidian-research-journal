@@ -48,7 +48,8 @@ research-journal doctor
 
 `doctor` checks the configuration files; client loading and hook trust must also be checked
 inside each assistant. All local sessions are included, including general planning.
-Browser-only chats and remote assistants without this local connection are outside v1.
+Browser-only chats need an explicit remote connection; see the optional
+[ChatGPT integration via Secure MCP Tunnel](docs/chatgpt.md).
 
 If this workspace is opened in a restricted agent session, your vault or home settings
 may be mounted read-only. Run the install command in your normal terminal. The tool
@@ -88,6 +89,16 @@ Home and project views are generated between clearly marked comments. Write your
 notes outside those sections. Session and idea notes are ordinary editable Markdown;
 views rebuild from session notes, including handwritten corrections and renamed files.
 Dates use `America/Toronto` by default.
+
+## ChatGPT (optional private connection)
+
+ChatGPT cannot launch this bridge's local stdio process directly. The
+[Secure MCP Tunnel instructions](docs/chatgpt.md) describe how eligible
+ChatGPT workspaces can connect to the existing stdio server without
+publishing the vault. Use `mcp --client chatgpt` for read-only tools by
+default, and only add `--allow-writes` after reviewing the security and
+permission implications. ChatGPT does not provide these clients' lifecycle
+hooks, so capture is explicitly requested rather than automatic.
 
 ## Agent review rounds
 
