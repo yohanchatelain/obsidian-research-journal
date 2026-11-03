@@ -22,10 +22,16 @@ class Config:
     projects: dict = field(default_factory=dict)
     exclude: list[str] = field(default_factory=lambda: ["Trash", "Templates"])
     review: dict = field(default_factory=dict)
+    verbosity: str = "concise"
+    stop_reminder: bool = False
 
     def __post_init__(self):
         self.vault = self.vault.expanduser().resolve()
         self.state = self.state.expanduser().resolve()
+        if self.verbosity not in {"concise", "verbose", "off"}:
+            raise ValueError("verbosity must be one of: concise, verbose, off")
+        if not isinstance(self.stop_reminder, bool):
+            raise ValueError("stop_reminder must be a boolean")
         if not isinstance(self.review, dict):
             raise ValueError("review must be an object")
         if not isinstance(self.review.get("reviewers", {}), dict) or not isinstance(self.review.get("executors", {}), dict):
@@ -64,7 +70,8 @@ class Config:
     def to_dict(self) -> dict:
         return {"vault": str(self.vault), "state": str(self.state), "folder": self.folder,
                 "todo": self.todo, "timezone": self.timezone, "projects": self.projects,
-                "exclude": self.exclude, "review": self.review}
+                "exclude": self.exclude, "review": self.review,
+                "verbosity": self.verbosity, "stop_reminder": self.stop_reminder}
 
     @classmethod
     def load(cls, path: Path | None = None) -> "Config":
@@ -74,4 +81,5 @@ class Config:
         vault_key = hashlib.sha256(str(vault).encode()).hexdigest()[:12]
         state = Path(data.get("state", f"~/.local/state/research-journal/{vault_key}"))
         return cls(vault=vault, state=state, **{k: v for k, v in data.items()
-                   if k in {"folder", "todo", "timezone", "projects", "exclude", "review"}})
+                   if k in {"folder", "todo", "timezone", "projects", "exclude", "review",
+                            "verbosity", "stop_reminder"}})

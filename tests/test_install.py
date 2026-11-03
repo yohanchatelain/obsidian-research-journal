@@ -171,4 +171,4 @@ def test_installed_command_uses_custom_config_from_any_directory(journal, setup_
     result = subprocess.run(hook, shell=True, input='{"session_id":"installed-test"}', cwd=tmp_path,
                             capture_output=True, text=True, timeout=5)
     assert result.returncode == 0, result.stderr
-    assert json.loads(result.stdout)["decision"] == "block"
+    assert json.loads(result.stdout) == {}

@@ -11,5 +11,7 @@
       "notes": ["Baseline research/Overview.md"]
     }
   },
-  "exclude": ["Trash", "Templates"]
+  "exclude": ["Trash", "Templates"],
+  "verbosity": "concise",
+  "stop_reminder": false
 }

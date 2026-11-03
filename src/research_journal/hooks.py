@@ -27,12 +27,24 @@ PROMPTED_CLIENTS = {"claude"}
 NOTIFICATION = "<task-notification>"
 
 
-def context_message(client: str, session: str, turn: int, workspace: str) -> str:
-    return (f"Research Journal context: client={client}, session_id={session}, turn={turn}, "
-            f"workspace={workspace}.\n{INSTRUCTIONS}")
+def context_message(client: str, session: str, turn: int, workspace: str, verbosity: str = "concise") -> str:
+    if verbosity == "off":
+        return ""
+    header = (f"Research Journal context: client={client}, session_id={session}, turn={turn}, "
+              f"workspace={workspace}.")
+    return f"{header}\n{INSTRUCTIONS}" if verbosity == "verbose" else header
+
+
+def stop_message(client: str, session: str, turn: int, workspace: str, verbosity: str = "concise") -> str:
+    ctx = context_message(client, session, turn, workspace,
+                          "verbose" if verbosity == "verbose" else "concise")
+    return ("Research Journal checkpoint missing. Save with record_progress or call "
+            f"checkpoint(nothing_to_record=true). {ctx}")
 
 
 def _context_output(client: str, event: str, message: str):
+    if not message:
+        return {}
     if client == "antigravity":
         return {"injectSteps": [{"systemMessage": {"systemMessage": message}}]}
     return {"hookSpecificOutput": {"hookEventName": event, "additionalContext": message}}
@@ -83,18 +95,18 @@ def handle(journal: Journal, client: str, event: str, payload: dict) -> dict:
                            (turn, client, session))
             db.execute("UPDATE sessions SET workspace=?,updated=? WHERE client=? AND id=?",
                        (workspace, now, client, session))
-            output = _context_output(client, event, context_message(client, session, turn, workspace))
+            output = _context_output(client, event,
+                                     context_message(client, session, turn, workspace, journal.config.verbosity))
         elif event == "Stop":
             # Each turn can request only one continuation, even when the client invokes Stop again.
             missing = row["saved"] < turn
             normal = payload.get("terminationReason", "model_stop") == "model_stop"
-            remind = missing and row["reminded"] < turn and normal and not payload.get("stop_hook_active")
+            remind = (journal.config.stop_reminder and journal.config.verbosity != "off"
+                      and missing and row["reminded"] < turn and normal and not payload.get("stop_hook_active"))
             if remind:
                 db.execute("UPDATE sessions SET reminded=?,state='awaiting-checkpoint',updated=? WHERE client=? AND id=?",
                            (turn, now, client, session))
-                message = ("Research Journal checkpoint missing. Save this turn with record_progress "
-                           "or checkpoint(nothing_to_record=true). "
-                           f"client={client}, session_id={session}, turn={turn}, workspace={workspace}.")
+                message = stop_message(client, session, turn, workspace, journal.config.verbosity)
                 output = {"decision": "continue" if client == "antigravity" else "block", "reason": message}
             else:
                 if missing:

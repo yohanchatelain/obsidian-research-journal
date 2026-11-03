@@ -1,10 +1,25 @@
 import pytest
 
-from research_journal.hooks import handle
+from research_journal.hooks import INSTRUCTIONS, handle
 
 
 @pytest.mark.parametrize("client", ["codex", "claude", "antigravity"])
-def test_each_client_requests_one_checkpoint(journal, client):
+def test_default_stop_is_nonblocking_and_concise(journal, client):
+    payload = {"session_id": "s", "conversationId": "s", "cwd": "/work",
+               "workspacePaths": ["/work"], "executionNum": 1}
+    started = handle(journal, client, "SessionStart", payload)
+    assert "session_id=s" in str(started)
+    assert INSTRUCTIONS.strip() not in str(started)
+    if client == "claude":
+        handle(journal, client, "UserPromptSubmit", {**payload, "prompt": "Hello"})
+    stopped = handle(journal, client, "Stop", payload)
+    assert stopped.get("decision") not in {"continue", "block"}
+    assert journal.status()["incomplete_sessions"][0]["state"] == "incomplete"
+
+
+@pytest.mark.parametrize("client", ["codex", "claude", "antigravity"])
+def test_each_client_requests_one_checkpoint_when_enabled(journal, client):
+    journal.config.stop_reminder = True
     payload = {"session_id": "s", "conversationId": "s", "cwd": "/work",
                "workspacePaths": ["/work"], "executionNum": 1}
     started = handle(journal, client, "SessionStart", payload)
@@ -13,13 +28,29 @@ def test_each_client_requests_one_checkpoint(journal, client):
         handle(journal, client, "UserPromptSubmit", {**payload, "prompt": "Hello"})
     first = handle(journal, client, "Stop", payload)
     assert first["decision"] == ("continue" if client == "antigravity" else "block")
+    assert INSTRUCTIONS.strip() not in first["reason"]
     second = handle(journal, client, "Stop", payload)
     assert second.get("decision") not in {"continue", "block"}
     assert journal.status()["incomplete_sessions"][0]["state"] == "incomplete"
 
 
+def test_verbosity_modes(journal):
+    payload = {"session_id": "s", "cwd": "/work"}
+    journal.config.verbosity = "verbose"
+    journal.config.stop_reminder = True
+    started = handle(journal, "codex", "SessionStart", payload)
+    assert INSTRUCTIONS.strip() in str(started)
+    stopped = handle(journal, "codex", "Stop", payload)
+    assert INSTRUCTIONS.strip() in stopped["reason"]
+
+    journal.config.verbosity = "off"
+    assert handle(journal, "codex", "SessionStart", {"session_id": "s2"}) == {}
+    assert handle(journal, "codex", "Stop", {"session_id": "s2"}) == {}
+
+
 @pytest.mark.parametrize("client", ["codex", "claude", "antigravity"])
 def test_checkpoint_allows_stop(journal, client):
+    journal.config.stop_reminder = True
     payload = {"session_id": "s", "conversationId": "s"}
     handle(journal, client, "SessionStart", payload)
     journal.record_progress("Work", {"findings": "Verified result"}, client=client, session_id="s", turn=0)
@@ -28,6 +59,7 @@ def test_checkpoint_allows_stop(journal, client):
 
 
 def test_nothing_to_record_and_new_prompt(journal):
+    journal.config.stop_reminder = True
     payload = {"session_id": "s", "prompt": "Hello", "turn_id": "turn-a"}
     handle(journal, "claude", "SessionStart", payload)
     handle(journal, "claude", "UserPromptSubmit", payload)
@@ -46,6 +78,7 @@ def test_noop_rejects_stale_or_unknown_turn(journal):
 
 
 def test_stop_hook_guard_and_interrupt(journal):
+    journal.config.stop_reminder = True
     payload = {"session_id": "s"}
     handle(journal, "codex", "SessionStart", payload)
     assert handle(journal, "codex", "Stop", {**payload, "stop_hook_active": True}) == {}
@@ -54,6 +87,7 @@ def test_stop_hook_guard_and_interrupt(journal):
 
 
 def test_antigravity_new_turn_after_idle(journal):
+    journal.config.stop_reminder = True
     payload = {"conversationId": "s", "workspacePaths": ["/work"]}
     handle(journal, "antigravity", "SessionStart", payload)
     journal.checkpoint("antigravity", "s", 0, True)

@@ -61,8 +61,10 @@ does not change permissions or request elevated privileges.
 2. During work, it records goals, methods, findings, failed attempts, decisions, evidence,
    blockers, and next steps. Planned and running work are distinguished from verified results.
 3. New ideas get individual notes. Intended actions go into today's section of `TODO list.md`.
-4. Before the assistant finishes, a hook requests a missing checkpoint once. Uncertain
-   task updates go to the inbox instead of changing a checkbox.
+4. Uncertain task updates go to the inbox instead of changing a checkbox. When the assistant
+   finishes without a checkpoint, the session is recorded as incomplete; set `"stop_reminder": true`
+   in `config.json` if you want the `Stop` hook to actively prompt once for a missing checkpoint,
+   and `"verbosity": "concise" | "verbose" | "off"` to control hook message output.
 
 The active assistant writes summaries using its existing session. There is no separate
 background model service. Abrupt process termination, disconnected MCP servers, denied
